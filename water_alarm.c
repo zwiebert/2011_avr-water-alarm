@@ -52,7 +52,7 @@ bool tt_Check(timedToggle *tt);
 /* timing */
 volatile uint32_t run_time; // process run time in milliseconds
 #define millis()  (run_time + 0UL)
-#define msec(ms)  ((uint32_t)(ms))     // milli seconds into ms
+#define msec(ms)  ((uint32_t)(ms))     // milliseconds into ms
 #define sec(s)    ((uint32_t) msec(s) * 1000UL) // seconds into ms
 #define minu(m)   ((uint32_t) sec(m) * 60UL)  //minutes into ms
 #define hour(h)   ((uint32_t) minu((h) * 60))
@@ -153,7 +153,7 @@ static void       alarmLed_State_Set(bool on);
 timedToggle       alarmBuzz_Interval               = { ALARM_BUZZ_INTERVAL  };  // buzz intervals
 timedEvent        alarmBuzz_Delay                  = { ALARM_BUZZ_DELAY };
 typedef enum { st_off, st_on, st_delayed } alarmBuzz_State_T; 
-bool              alarmBuzz_State;
+alarmBuzz_State_T              alarmBuzz_State;
 static void       alarmBuzz_State_Set(alarmBuzz_State_T  on);
 
 
