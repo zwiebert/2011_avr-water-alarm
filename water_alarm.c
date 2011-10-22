@@ -137,7 +137,7 @@ void              multiButton_Check(void);
 timedEvent        alarm_AutoOff                    = { ALARM_AUTO_OFF };
 
 
-/* Alarm LED : signals level too high.  Alarm goes on when water level
+/* Alarm LED : signals water level too high.  Alarm goes on when water level
    too high, and stays on until multi-button is pressed *while* water
    level is back to normal */
 timedToggle       alarmLed_Blink                   = { ALARM_LED_BLINK_A };  // blink intervals
@@ -390,7 +390,7 @@ main_loop() {
 }
 
 
-// init hardware
+// initialize hardware
 //////////////////////////////////////////////////////////////////////////////
 static void 
 init_ports() 
