@@ -55,7 +55,10 @@ volatile uint32_t run_time; // process run time in milliseconds
 #define msec(ms)  ((uint32_t)(ms))     // milliseconds into ms
 #define sec(s)    ((uint32_t) msec(s) * 1000UL) // seconds into ms
 #define minu(m)   ((uint32_t) sec(m) * 60UL)  //minutes into ms
-#define hour(h)   ((uint32_t) minu((h) * 60))
+#define hour(h)   ((uint32_t) minu((h) * 60UL))
+#define day(d)    ((uint32_t) hour(d) * 24UL)
+#define week(w)   ((uint32_t) day(w) * 7UL)
+#define MAX_TIMER_INTVERAL                       day(7)
 
 
 // configuration / globals
@@ -176,11 +179,18 @@ static void       alarmRelay_State_Set(bool on);
 // timer related code
 ////////////////////////////////////////////////////////////////////////////////
 
+int
+compareTimes(uint32_t a, uint32_t b) {
+	if (a == b) return 0;
+	if (a < b && b - a < MAX_TIMER_INTVERAL) return -1;  
+	if (a > b && a - b > MAX_TIMER_INTVERAL) return -1; 
+	return 1;
+}
+
 bool 
 tt_Check(timedToggle *tt) {
- 
-  if (millis() < tt->nextTime)
-    return false;
+  if (compareTimes(millis(), tt->nextTime) < 0)
+   return false;
 
   tt->state = !tt->state;
   tt->nextTime += (tt->state ? tt->waitOnTime : tt->waitOffTime);
@@ -190,7 +200,7 @@ tt_Check(timedToggle *tt) {
 
 bool 
 te_Check(timedEvent *te) {
-  if (millis() < te->nextTime)
+  if (compareTimes(millis(), te->nextTime) < 0)
     return false;
 
   te->nextTime += te->waitTime;
