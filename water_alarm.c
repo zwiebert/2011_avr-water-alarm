@@ -1,4 +1,4 @@
-/* -*- compile-command: "/cygdrive/e/WinAVR-20100110/utils/bin/make.exe -C default  all && bash -c ./__flash.sh"; -*- */
+/* -*- compile-command: "/cygdrive/e/Program Files/Atmel/AVR Studio 5.0/AVR ToolChain/bin/make.exe -C default  all && bash -c ./__flash.sh"; -*- */
 
 #include "debug.h"
 
@@ -73,11 +73,11 @@ volatile uint32_t run_time; // process run time in milliseconds
 #define           alarmRelay_Pin                (D, PORT0) // digital output
 #define           alarmBuzz_Pin                 (D, PORT5) // (B, PORT2)  // digital output
 
-#define           ALARM_BUZZ_DELAY              hour( 10)
-#define           ALARM_AUTO_OFF                hour( 48)
-#define           ALARM_LED_BLINK_BUZZING       msec(150), msec( 200)  //fast blink before alarm reset button
-#define           ALARM_LED_BLINK_A             msec(150), msec(1200)  //slow blink after alarm reset button
-#define           ALARM_LED_BLINK_B             msec( 20), msec(5000) //slow blink if water level low
+#define           ALARM_BUZZ_DELAY              hour( 10)              //avoid buzzing at night
+#define           ALARM_AUTO_OFF                hour( 12)              //delay the auto-off to make sure its not just temporally below the electrodes 
+#define           ALARM_LED_BLINK_BUZZING       msec(150), msec( 200)  //fast blink before alarm reset button is pressed
+#define           ALARM_LED_BLINK_A             msec(150), msec(1200)  //slow blink after alarm reset button was pressed
+#define           ALARM_LED_BLINK_B             msec( 20), msec(5000)  //very slow blink if water level low
 #define           ALARM_BUZZ_INTERVAL           msec(100), msec( 400)
 #define           WAT_SENS_TOGGLE                sec( 10),  sec(  10),
 #define           WAT_SENS_SAMPLE                sec(  1)
