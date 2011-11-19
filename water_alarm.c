@@ -14,6 +14,7 @@ typedef enum { low, high } loglvl;
 #include <avr/iom8.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <avr/wdt.h>
 
 #include "lowlevel.h"
 
@@ -23,7 +24,7 @@ typedef enum { low, high } loglvl;
 //#define NO_LED
 //#define NO_BUZZ
 //#define NO_BUTTON
-
+//#define NO_WATCHDOG
 
 /* sleep mode gets in the way of ADC 
 http://www.mikrocontroller.net/topic/42689
@@ -293,6 +294,11 @@ ISR(TIMER0_OVF_vect) {
 void
 main_loop() {
 
+#ifndef NO_WATCHDOG
+
+
+#endif
+
 
   // read input
   //////////////
@@ -454,6 +460,13 @@ init_tick_timer() {
 
 int
 main() {
+
+	
+#if 1
+   // force timer variable overrun for testing purpose
+	run_time = (uint32_t)~0 - minu(5);
+#endif	
+
 #ifndef SIMU
   init_ports();
   init_tick_timer();
@@ -463,8 +476,13 @@ main() {
   set_sleep_mode(SLEEP_MODE_IDLE);
 #endif
 
-  sei();
 
+#ifndef NO_WATCHDOG
+  wdt_enable (WDTO_1S);
+#endif
+
+  sei();
+  
   for(;;) {
 
 #ifndef NO_SLEEP_MODE
@@ -473,6 +491,11 @@ main() {
     }
 #endif
     main_loop();
+
+#ifndef NO_WATCHDOG
+    wdt_reset();
+#endif
+
    }
  
 }
