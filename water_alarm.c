@@ -35,17 +35,18 @@ http://www.mikrocontroller.net/topic/42689
 //#define TESTING
 
 typedef struct {
-  uint32_t waitTime, nextTime;
-#define te_Clear(te) (((te)->nextTime = 0))
-#define te_Init(te) (((te)->nextTime =(millis() + (te)->waitTime)))
+  uint32_t waitTime, nextTime; bool init;
+#define te_Clear(te) (((te)->nextTime = millis()), ((te)->init = true))
+#define te_Init(te) (((te)->nextTime =(millis() + (te)->waitTime)),((te)->init = true))
 } timedEvent;
 bool te_Check(timedEvent *te);
 
 
 typedef struct {
-  uint32_t waitOnTime, waitOffTime, nextTime;
+  uint32_t waitOnTime, waitOffTime, nextTime; bool init;
   bool state;
-#define tt_Clear(tt) (((tt)->nextTime = 0),((tt)->state = false))
+//#define tt_Clear(tt) (((tt)->nextTime = 0),((tt)->state = false))
+#define tt_Clear(tt) (((tt)->nextTime = (millis())),((tt)->state = false),((tt)->init = true))
 } timedToggle;
 bool tt_Check(timedToggle *tt);
 
@@ -59,7 +60,7 @@ volatile uint32_t run_time; // process run time in milliseconds
 #define hour(h)   ((uint32_t) minu((h) * 60UL))
 #define day(d)    ((uint32_t) hour(d) * 24UL)
 #define week(w)   ((uint32_t) day(w) * 7UL)
-#define MAX_TIMER_INTVERAL                       day(7)
+#define MAX_TIMER_INTVERAL                       day(8)
 
 
 // configuration / globals
@@ -79,6 +80,7 @@ volatile uint32_t run_time; // process run time in milliseconds
 #define           ALARM_LED_BLINK_BUZZING       msec(150), msec( 200)  //fast blink before alarm reset button is pressed
 #define           ALARM_LED_BLINK_A             msec(150), msec(1200)  //slow blink after alarm reset button was pressed
 #define           ALARM_LED_BLINK_B             msec( 20), msec(5000)  //very slow blink if water level low
+#define           ALARM_LED_STANDBY             msec(1),   week(1)    //status light for stand by
 #define           ALARM_BUZZ_INTERVAL           msec(100), msec( 400)
 #define           WAT_SENS_TOGGLE                sec( 10),  sec(  10),
 #define           WAT_SENS_SAMPLE                sec(  1)
@@ -147,6 +149,7 @@ timedEvent        alarm_AutoOff                    = { ALARM_AUTO_OFF };
 timedToggle       alarmLed_Blink                   = { ALARM_LED_BLINK_A };  // blink intervals
 timedToggle       alarmLed_Blink_2                 = { ALARM_LED_BLINK_B };  // blink intervals
 timedToggle       alarmLed_Blink_3                 = { ALARM_LED_BLINK_BUZZING };  // blink intervals
+timedToggle       alarmLed_StandBy                 = { ALARM_LED_STANDBY };  // blink intervals
 
 bool              alarmLed_State;
 static void       alarmLed_State_Set(bool on);
@@ -173,7 +176,9 @@ static void       alarmRelay_State_Set(bool on);
 #define           testBatt_State                     (!alarmLed_State && multiButton_State)
 
 
-
+#ifndef NO_WATCHDOG
+timedEvent        watchdogReset                    = { msec(500) };
+#endif
 
 
 
@@ -190,6 +195,10 @@ compareTimes(uint32_t a, uint32_t b) {
 
 bool 
 tt_Check(timedToggle *tt) {
+ if (!tt->init) {
+	tt_Clear(tt);
+ }
+
   if (compareTimes(millis(), tt->nextTime) < 0)
    return false;
 
@@ -201,6 +210,10 @@ tt_Check(timedToggle *tt) {
 
 bool 
 te_Check(timedEvent *te) {
+  if (!te->init) {
+	te_Init(te);
+  }
+	
   if (compareTimes(millis(), te->nextTime) < 0)
     return false;
 
@@ -352,7 +365,10 @@ main_loop() {
 	  (alarmLed_Blink.state && watLvl_High && alarmBuzz_State == st_off) ||
 	  (alarmLed_Blink_2.state && !watLvl_High))
         outAlarmLed = true;
-    }
+    } else {
+		tt_Check(&alarmLed_StandBy);
+		outAlarmLed = alarmLed_StandBy.state;
+	}
 #endif
 
 #ifndef NO_BUZZ
@@ -462,7 +478,7 @@ int
 main() {
 
 	
-#if 1
+#if 0
    // force timer variable overrun for testing purpose
 	run_time = (uint32_t)~0 - minu(5);
 #endif	
@@ -478,7 +494,7 @@ main() {
 
 
 #ifndef NO_WATCHDOG
-  wdt_enable (WDTO_1S);
+  wdt_enable (WDTO_2S);
 #endif
 
   sei();
@@ -486,14 +502,16 @@ main() {
   for(;;) {
 
 #ifndef NO_SLEEP_MODE
-    if(!alarmBuzz_State) {
+    if (!alarmBuzz_State) {
       sleep_mode();
     }
 #endif
     main_loop();
 
 #ifndef NO_WATCHDOG
-    wdt_reset();
+    if (te_Check(&watchdogReset)) {
+       wdt_reset();
+    }	
 #endif
 
    }
